@@ -1,0 +1,19 @@
+services:
+  - type: web
+    name: groupshield
+    runtime: node
+    plan: free
+    branch: main
+    autoDeployTrigger: "off"
+    buildCommand: npm ci --omit=dev --ignore-scripts
+    startCommand: node src/index.js
+    healthCheckPath: /healthz
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      - key: DATABASE_URL
+        sync: false
+      - key: ADMIN_PASSWORD
+        generateValue: true
+      - key: SESSION_SECRET
+        generateValue: true

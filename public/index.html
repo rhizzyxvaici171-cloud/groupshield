@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>GroupShield</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <main id="login" class="login" hidden>
+    <h1>GroupShield</h1>
+    <p>Protects your WhatsApp groups from bugs, spam and raids.</p>
+    <form id="login-form">
+      <label for="password">Dashboard password</label>
+      <input id="password" type="password" autocomplete="current-password" required>
+      <button type="submit">Sign in</button>
+      <p class="error" id="login-error" role="alert"></p>
+    </form>
+  </main>
+
+  <div id="dash" hidden>
+    <header>
+      <h1 id="bot-name">GroupShield</h1>
+      <span class="pill" id="status"></span>
+      <button id="logout" class="quiet">Sign out</button>
+    </header>
+    <main>
+      <p class="error" id="notice" role="alert"></p>
+
+      <section id="link" class="card" hidden>
+        <h2>Link your WhatsApp</h2>
+        <div class="linkgrid">
+          <div>
+            <p>On your phone open <b>WhatsApp → Linked devices → Link a device</b> and scan this code.</p>
+            <img id="qr" alt="WhatsApp QR code" width="280" height="280">
+          </div>
+          <form id="pair-form">
+            <label for="phone">Or link with your phone number</label>
+            <input id="phone" inputmode="tel" placeholder="2348012345678" required>
+            <button type="submit">Get pairing code</button>
+            <output id="pair-code"></output>
+            <p class="hint">Use a spare number if you can. The bot needs to be a group admin to delete messages.</p>
+          </form>
+        </div>
+      </section>
+
+      <section class="tiles" id="tiles" aria-label="Totals"></section>
+
+      <section>
+        <div class="row"><h2>Groups</h2><button id="refresh" class="quiet">Refresh</button></div>
+        <div id="groups"></div>
+      </section>
+
+      <section>
+        <h2>Recent incidents</h2>
+        <div class="scroll"><table>
+          <thead><tr><th>When</th><th>Where</th><th>Who</th><th>What</th><th>Action</th></tr></thead>
+          <tbody id="incidents"></tbody>
+        </table></div>
+      </section>
+    </main>
+  </div>
+  <script src="/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,19 @@
+{
+  "name": "groupshield",
+  "version": "1.0.0",
+  "description": "Self-hosted WhatsApp group guard: removes crash/bug messages, stops spam, links and raids, and gives admins full control.",
+  "main": "src/index.js",
+  "private": true,
+  "scripts": {
+    "start": "node src/index.js",
+    "test": "node --test test/*.test.js"
+  },
+  "license": "MIT",
+  "engines": { "node": ">=22" },
+  "dependencies": {
+    "@whiskeysockets/baileys": "7.0.0-rc14",
+    "pg": "^8.16.0",
+    "pino": "^9.6.0",
+    "qrcode": "^1.5.4"
+  }
+}
