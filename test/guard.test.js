@@ -390,3 +390,14 @@ test('the bot ignores its own messages, status updates and channels', async () =
   await send(PAYLOAD, MEMBER, { chat: '123@newsletter' });
   assert.deepEqual([calls.settings, calls.deletes], [[], []]);
 });
+
+test('an owner is recognised in groups that hide phone numbers', async () => {
+  const { send, calls } = setup({ lid: true });
+  calls.texts.length = 0;
+  const owner = setup({ lid: true });
+  owner.store.setGlobal('owners', ['2340000000003']);
+  await owner.send('.lock', '902@lid');
+  assert.deepEqual(owner.calls.settings, ['announcement'], 'matched through the member list');
+  await send('.lock', '902@lid');
+  assert.deepEqual(calls.settings, []);
+});

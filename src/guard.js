@@ -284,12 +284,15 @@ class Guard {
     if (this.handled.size > 3000) this.handled.delete(this.handled.values().next().value);
 
     const fromMe = !!msg.key.fromMe;
-    const sender = fromMe ? ids.selfIds(this.sock) : ids.senderIds(msg.key);
-    if (!sender.length) return null;
+    const keyIds = fromMe ? ids.selfIds(this.sock) : ids.senderIds(msg.key);
+    if (!keyIds.length) return null;
     const age = Date.now() / 1000 - Number(msg.messageTimestamp || 0);
     const fresh = type === 'notify' && age < FRESH_SECONDS;
     const s = group ? this.store.settings(chat) : null;
     const meta = group ? await this.meta(chat) : null;
+    // Groups that hide numbers send only a private id; the member list links it
+    // to the phone number, which is what owner numbers are matched against.
+    const sender = group ? this.member(meta, keyIds).all : keyIds;
     const senderAdmin = group && ids.isAdmin(meta, sender);
     const owner = this.isOwner(sender, fromMe);
     const trusted = owner || this.store.isWhitelisted(sender);
