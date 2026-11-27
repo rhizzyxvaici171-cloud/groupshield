@@ -9,6 +9,8 @@ const crypto = require('crypto');
 const QRCode = require('qrcode');
 const { GROUP_DEFAULTS, BOUNDS } = require('./store');
 
+const GLOBALS = ['access', 'owners', 'timezone'];
+
 const PUBLIC = path.join(__dirname, '..', 'public');
 const FILES = {
   '/': ['index.html', 'text/html; charset=utf-8'],
@@ -90,6 +92,10 @@ function createWeb({ app, config, requestPairingCode, refreshGroups, logger }) {
       me: app.me,
       error: app.lastError,
       qr: app.qr ? await QRCode.toDataURL(app.qr, { margin: 1, width: 280 }) : null,
+      access: app.store.state.access,
+      owners: app.store.state.owners,
+      envOwners: config.owners,
+      timezone: app.store.state.timezone,
       stats: app.store.state.stats,
       incidents: app.store.state.incidents.slice(0, 50),
       groups: app.groups.map((g) => ({ ...g, settings: app.store.settings(g.id) })),
@@ -136,6 +142,10 @@ function createWeb({ app, config, requestPairingCode, refreshGroups, logger }) {
       } catch (e) {
         return send(res, 400, { error: e.message });
       }
+    }
+    if (url === '/api/global' && app.store) {
+      if (!GLOBALS.includes(body.name) || !app.store.setGlobal(body.name, body.value)) return send(res, 400, { error: 'That value is not allowed.' });
+      return send(res, 200, { ok: true });
     }
     if (url === '/api/group' && app.store) {
       const { id, name, value } = body;

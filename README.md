@@ -16,6 +16,12 @@ A self-hosted WhatsApp bot that protects groups from people who try to crash the
 | **Status tagging spam** | Deleted and warned. |
 | **Banned people rejoining** | Removed again. |
 | **Payloads hidden in a group's name or description** | Owner alerted. |
+| **People trying to command the bot** | Only the owner is obeyed. Others are warned, and removed at the third try. |
+| **Other bots in the group** | Their replies are deleted. Whoever called the bot is warned and removed at the third time. The bot account itself is removed. |
+| **Banned words, muted members** | Deleted (and warned, for words). |
+| **Numbers from other countries** | Removed on join, and their join requests refused. |
+
+On top of protection it does what group bots usually do: tag everyone (openly or hidden), polls, welcome and goodbye messages, open and close the group on a daily schedule, approve join requests, activity rankings, and full member and group management.
 
 The bot never displays messages. It only inspects their structure, so a message that crashes a phone does not crash the bot.
 
@@ -42,17 +48,35 @@ npm start
 
 Open http://localhost:3000 and sign in with the password printed in the terminal.
 
+## Who controls it
+
+By default **only the owner** is obeyed: the linked number, `OWNER_NUMBERS`, and co-owners added on the dashboard or with `.addowner`. Anyone else who uses a command gets a warning and is removed at the third (admins are warned but never removed). Everyone may use `.rules`.
+
+`.access admins` lets group admins use the group commands too. Owner commands stay owner-only.
+
+### How other bots are spotted
+
+A bot's message looks like anyone's, so the evidence adds up:
+
+- It quotes a command sent seconds earlier.
+- It came within five seconds.
+- It has a message id only bot libraries create.
+- It looks like bot output (ad cards, buttons, channel forwards, long menus).
+- It was caught before.
+
+A reply is treated as a bot's when enough of these agree. The bot account is removed on its second catch, or at once when the evidence is overwhelming. People quoting each other in normal conversation are not affected. Owners and trusted people may use their own bots.
+
 ## Commands
 
-Send these in the group. Reply to a person, tag them or add their number where one is needed.
+Send `.menu` in a group for the full list. Reply to a person, tag them or add their number where one is needed.
 
-| Who | Commands |
+| Area | Commands |
 |---|---|
-| Everyone | `.help` `.rules` |
-| Group admins: protection | `.status` `.shield on/off` `.antibug on/off` `.antilink off/invites/all` `.antispam on/off` `.antiraid on/off` `.antitag on/off` `.set warnlimit 3` `.scan` |
-| Group admins: members | `.kick` `.ban` `.unban` `.warn` `.unwarn` `.warnings` `.promote` `.demote` `.del` |
-| Group admins: group | `.lock` `.unlock` `.tagall` `.link` `.resetlink` `.setrules` `.welcome on/off` |
-| Owner | `.trust` `.untrust` `.trusted` |
+| General | `.menu` `.ping` `.uptime` `.rules` |
+| Protection | `.status` `.shield` `.antibug` `.antispam` `.antiraid` `.antitag` `.antibot` `.antiword` `.antifake` (each `on`/`off`), `.antilink off/invites/all`, `.addword` `.delword` `.words`, `.allowcc 234,233`, `.set warnlimit 3`, `.scan` |
+| Members | `.kick` `.ban` `.unban` `.warn` `.unwarn` `.warnings` `.mute 30` `.unmute` `.promote` `.demote` `.add` `.del` |
+| Group | `.lock`/`.close` `.unlock`/`.open` `.autoclose 22:00` `.autoopen 06:00` `.tagall` `.hidetag` `.admins` `.groupinfo` `.link` `.resetlink` `.setname` `.setdesc` `.setrules` `.welcome` `.goodbye` `.requests` `.approve` `.reject` `.active` `.inactive` `.poll Q \| A \| B` |
+| Owner | `.access owner/admins` `.addowner` `.delowner` `.owners` `.trust` `.untrust` `.trusted` `.timezone Africa/Lagos` |
 
 ## Settings
 
@@ -75,6 +99,7 @@ All optional when running locally. See [.env.example](.env.example).
 - **It uses an unofficial WhatsApp connection** ([Baileys](https://github.com/WhiskeySockets/Baileys)). WhatsApp can restrict numbers that use one. Use a spare number, not your main one.
 - **Anyone with the dashboard password, or both the database and the secret, controls the linked account.** Treat them like your phone.
 - **A hard crash can lose up to 15 minutes of encryption state** when a database is used, so a few messages may not be readable afterwards. Normal restarts save first.
+- **Bot spotting is evidence-based.** A bot that answers slowly, without quoting, in plain text, may get through.
 - **Free plans change.** Check the current terms of Render, Neon and UptimeRobot.
 
 ## How it is built
@@ -88,7 +113,7 @@ web.js   password-protected dashboard
 storage.js   encrypted files or Postgres
 ```
 
-`npm test` runs 35 tests. All samples are synthetic: this repository contains no working crash payloads, and no feature that sends them.
+`npm test` runs 49 tests. All samples are synthetic: this repository contains no working crash payloads, and no feature that sends them.
 
 ## Credits
 

@@ -94,6 +94,7 @@ async function connect() {
   sock.ev.on('messages.upsert', (m) => guard.onMessages(m));
   sock.ev.on('group-participants.update', (u) => guard.onParticipants(u));
   sock.ev.on('groups.update', (u) => guard.onGroups(u));
+  sock.ev.on('group.join-request', (r) => guard.onJoinRequest(r));
 
   sock.ev.on('connection.update', async (u) => {
     if (app.sock !== sock) return;
@@ -188,7 +189,10 @@ async function main() {
   await storage.init();
   app.store = new Store(storage);
   process.on('unhandledRejection', (e) => logger.error({ error: String(e?.message || e) }, 'unhandled rejection'));
-  setInterval(() => app.guard?.releaseExpiredLocks().catch((e) => logger.error({ error: e.message }, 'unlock failed')), 30000).unref();
+  setInterval(() => {
+    app.guard?.releaseExpiredLocks().catch((e) => logger.error({ error: e.message }, 'unlock failed'));
+    app.guard?.runSchedules().catch((e) => logger.error({ error: e.message }, 'schedule failed'));
+  }, 30000).unref();
   connect().catch(onConnectError);
 }
 

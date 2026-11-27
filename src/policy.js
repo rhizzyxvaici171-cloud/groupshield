@@ -52,6 +52,8 @@ function contextInfo(message) {
 function hasLink(message, mode) {
   if (mode === 'off') return false;
   if (content(message).groupInviteMessage) return true;
+  // Posts forwarded from a channel are the usual way to advertise one.
+  if (contextInfo(message).forwardedNewsletterMessageInfo) return true;
   const text = visibleText(message);
   return INVITE.test(text) || (mode === 'all' && URL_RE.test(text));
 }

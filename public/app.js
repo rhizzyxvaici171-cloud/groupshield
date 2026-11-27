@@ -9,7 +9,8 @@ const el = (tag, props = {}, ...kids) => {
 
 const TOGGLES = [
   ['enabled', 'Protection on'], ['antibug', 'Bug messages'], ['antispam', 'Spam and floods'],
-  ['antiraid', 'Raids'], ['antitag', 'Status tags'], ['welcome', 'Welcome message']
+  ['antiraid', 'Raids'], ['antitag', 'Status tags'], ['antibot', 'Other bots'],
+  ['antiword', 'Banned words'], ['antifake', 'Foreign numbers'], ['welcome', 'Welcome message'], ['goodbye', 'Goodbye message']
 ];
 const NUMBERS = [
   ['warnLimit', 'Warnings before removal'], ['floodCount', 'Flood: messages'], ['floodSeconds', 'Flood: seconds'],
@@ -22,6 +23,7 @@ const STATUS = {
 
 let timer = null;
 let drawnGroups = '';
+let drawnControl = '';
 
 async function api(path, body) {
   const res = await fetch(`/api/${path}`, body === undefined ? {} : {
@@ -37,6 +39,35 @@ function showLogin() {
   clearTimeout(timer);
   $('dash').hidden = true;
   $('login').hidden = false;
+}
+
+async function saveGlobal(name, value) {
+  try {
+    await api('global', { name, value });
+    $('notice').textContent = '';
+  } catch (e) {
+    $('notice').textContent = e.message;
+  }
+  drawnControl = '';
+  load();
+}
+
+function controlCard(s) {
+  const access = el('select');
+  for (const [v, t] of [['owner', 'Owner only'], ['admins', 'Owner and group admins']]) {
+    access.append(el('option', { value: v, textContent: t, selected: s.access === v }));
+  }
+  access.addEventListener('change', () => saveGlobal('access', access.value));
+  const owners = el('input', { value: s.owners.join(', '), placeholder: '2348012345678, 447700900123', inputMode: 'tel' });
+  owners.addEventListener('change', () => saveGlobal('owners', owners.value));
+  const tz = el('input', { value: s.timezone, placeholder: 'Africa/Lagos' });
+  tz.addEventListener('change', () => saveGlobal('timezone', tz.value.trim()));
+  const fixed = s.envOwners.length ? `Also owners from OWNER_NUMBERS: ${s.envOwners.join(', ')}. ` : '';
+  return el('div', { className: 'card fields' },
+    el('label', {}, 'Who can command the bot', access),
+    el('label', {}, 'Owner numbers, with country code', owners),
+    el('label', {}, 'Time zone for daily open/close', tz),
+    el('p', { className: 'hint wide', textContent: `${fixed}The linked number is always an owner.` }));
 }
 
 async function save(id, name, value) {
@@ -70,13 +101,23 @@ function groupCard(g, bounds) {
     input.addEventListener('change', () => save(g.id, name, Number(input.value)));
     fields.append(el('label', {}, label, input));
   }
+  for (const [name, label] of [['autoClose', 'Close every day at'], ['autoOpen', 'Open every day at']]) {
+    const input = el('input', { type: 'time', value: s[name] });
+    input.addEventListener('change', () => save(g.id, name, input.value));
+    fields.append(el('label', {}, label, input));
+  }
+  const codes = el('input', { value: s.allowedCodes, placeholder: '234, 233', inputMode: 'numeric' });
+  codes.addEventListener('change', () => save(g.id, 'allowedCodes', codes.value));
+  fields.append(el('label', {}, 'Allowed country codes', codes));
   const rules = el('textarea', { rows: 3, maxLength: 2000, value: s.rules, placeholder: 'Shown with .rules and the welcome message' });
   rules.addEventListener('change', () => save(g.id, 'rules', rules.value));
+  const words = el('textarea', { rows: 2, value: s.words.join(', '), placeholder: 'Comma separated' });
+  words.addEventListener('change', () => save(g.id, 'words', words.value));
 
   const badge = el('span', { className: g.botAdmin ? 'badge ok' : 'badge bad', textContent: g.botAdmin ? 'Bot is admin' : 'Make the bot an admin' });
   return el('details', { className: 'card' },
     el('summary', {}, el('b', { textContent: g.name }), el('span', { className: 'hint', textContent: `${g.members} members` }), badge),
-    toggles, fields, el('label', {}, 'Rules', rules));
+    toggles, fields, el('label', {}, 'Rules', rules), el('label', { className: 'gap' }, 'Banned words', words));
 }
 
 function render(s) {
@@ -93,8 +134,14 @@ function render(s) {
 
   $('tiles').replaceChildren(...[
     ['Bugs caught', s.stats.bugs], ['Messages deleted', s.stats.deleted], ['Warnings', s.stats.warned],
-    ['Removed', s.stats.kicked], ['Lockdowns', s.stats.raids]
+    ['Bot replies', s.stats.bots], ['Removed', s.stats.kicked], ['Lockdowns', s.stats.raids]
   ].map(([k, v]) => el('div', { className: 'tile' }, el('strong', { textContent: v || 0 }), el('span', { textContent: k }))));
+
+  const control = JSON.stringify([s.access, s.owners, s.timezone]);
+  if (s.access && control !== drawnControl) {
+    drawnControl = control;
+    $('control').replaceChildren(controlCard(s));
+  }
 
   // Redraw only on change so an open panel or half-typed rule is not lost.
   const sig = JSON.stringify(s.groups.map((g) => [g.id, g.name, g.members, g.botAdmin]));
