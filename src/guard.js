@@ -80,6 +80,7 @@ class Guard {
     this.sentIds = new Set();
     this.handled = new Set();
     this.lastAlert = 0;
+    this.lastRefusal = new Map();
     this.startedAt = Date.now();
   }
 
@@ -315,6 +316,7 @@ class Guard {
       const cmd = this.commands.find(text, this.config.prefix);
       if (cmd) {
         const allowed = this.commands.allowed(cmd, { owner, admin: senderAdmin, access: this.store.state.access, group });
+        this.logger.info({ command: cmd.name, where: group ? 'group' : 'private', from: fromMe ? 'linked number' : ids.label(sender), owner, allowed }, 'command received');
         if (allowed) {
           await this.commands.handle({ ...c, guard: this, cmd, admin: owner || senderAdmin });
           return { command: cmd.name };
@@ -322,6 +324,12 @@ class Guard {
         if (group && s.enabled) {
           this.bots.noteCommand(chat, msg, sender, true);
           return { refused: cmd.name, action: await this.punish(chat, sender, 'only the owner can command me', meta, 'cmd') };
+        }
+        // In private, say why once in a while instead of staying silent.
+        if (!group && Date.now() - (this.lastRefusal.get(sender[0]) || 0) > 10 * 60000) {
+          this.lastRefusal.set(sender[0], Date.now());
+          if (this.lastRefusal.size > 500) this.lastRefusal.delete(this.lastRefusal.keys().next().value);
+          await this.send(chat, `⛔ I only take commands from my owner. Your number ${ids.label(sender)} is not an owner.`, { quoted: msg });
         }
         return { refused: cmd.name };
       }

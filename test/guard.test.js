@@ -401,3 +401,13 @@ test('an owner is recognised in groups that hide phone numbers', async () => {
   await send('.lock', '902@lid');
   assert.deepEqual(calls.settings, []);
 });
+
+test('a stranger messaging the bot privately is told why, once', async () => {
+  const { send, calls } = setup();
+  await send('.menu', MEMBER, { chat: MEMBER });
+  await send('.menu', MEMBER, { chat: MEMBER });
+  assert.equal(calls.texts.length, 1);
+  assert.match(calls.texts[0].text, /only take commands from my owner.*\+2340000000003/);
+  await send('.menu', OWNER, { chat: OWNER });
+  assert.match(calls.texts.at(-1).text, /Owner menu/);
+});
